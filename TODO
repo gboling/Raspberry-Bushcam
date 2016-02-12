@@ -1,0 +1,12 @@
+check if pigpiod is running prior to calling dht stuff -- if not then disable temp/humidity stuff
+encode to mp4 from stream instead of a file to cut down on disk writes
+handle running out of disk space gracefully (user configurable threshold to stop recording)
+set up to use configuration files
+
+write backup script:
+	should check once a day
+	check for unencoded files and encode them (will be moot once stream encoding is written)
+	copy files that don’t match the current date
+	verify they made it and delete the old ones
+
+web interface (crib from picroscopy)
