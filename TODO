@@ -1,6 +1,6 @@
 check if pigpiod is running prior to calling dht stuff -- if not then disable temp/humidity stuff
 encode to mp4 from stream instead of a file to cut down on disk writes
-handle running out of disk space gracefully (user configurable threshold to stop recording)
+handle running out of disk space gracefully (user configurable threshold (% or absolute size?) to stop recording)
 set up to use configuration files
 
 write backup script:
@@ -8,5 +8,7 @@ write backup script:
 	check for unencoded files and encode them (will be moot once stream encoding is written)
 	copy files that don’t match the current date
 	verify they made it and delete the old ones
+
+handle running library modules as stand-alone and give them useful cli guidance.
 
 web interface (crib from picroscopy)
