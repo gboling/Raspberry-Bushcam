@@ -9,6 +9,6 @@ write backup script:
 	copy files that don’t match the current date
 	verify they made it and delete the old ones
 
-handle running library modules as stand-alone and give them useful cli guidance.
+handle running modules as stand-alone and give them useful cli guidance.
 
 web interface (crib from picroscopy)
