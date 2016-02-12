@@ -2,6 +2,7 @@ check if pigpiod is running prior to calling dht stuff -- if not then disable te
 encode to mp4 from stream instead of a file to cut down on disk writes
 handle running out of disk space gracefully (user configurable threshold (% or absolute size?) to stop recording)
 set up to use configuration files
+add all dependencies to README
 
 write backup script:
 	should check once a day
