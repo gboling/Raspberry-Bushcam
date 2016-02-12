@@ -10,3 +10,6 @@ PIR sensor,
 Raspbian Jessie,
 pigpiod http://abyz.co.uk/rpi/pigpio/pigpiod.html
 DHTXXD  http://abyz.co.uk/rpi/pigpio/examples.html
+
+PIR sensor should be plugged into GPIO pin 17
+DHT sensor should be plugged into GPIO pin 18
