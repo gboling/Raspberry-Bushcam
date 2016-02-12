@@ -13,7 +13,7 @@ Raspberry Pi 2 B with Camera, picamera-dev
 PIR sensor,
 Raspbian Jessie,
 pigpiod http://abyz.co.uk/rpi/pigpio/pigpiod.html
-DHTXXD  http://abyz.co.uk/rpi/pigpio/examples.html -- place in /usr/bin or somewhere in $PATH
+DHTXXD  http://abyz.co.uk/rpi/pigpio/examples.html -- compile, then place in /usr/bin or somewhere in $PATH
 
 PIR sensor should be plugged into GPIO pin 17
 DHT sensor should be plugged into GPIO pin 18
