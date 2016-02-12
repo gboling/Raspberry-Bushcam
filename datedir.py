@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# by J. Grant Boling: gboling [at] gmail [dot] com
 
 # To make a directory for each calendar day.
 
