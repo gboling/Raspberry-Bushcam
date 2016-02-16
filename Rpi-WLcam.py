@@ -3,7 +3,7 @@
 # PIR control of the rpi camera with DHT sensor, automatically sorting new video into directories by date.
 # by J. Grant Boling: gboling [at] gmail [dot] com
 # with guidance from http://nestboxtech.blogspot.co.uk/2014/11/how-to-make-your-own-raspberry-pi-trail.html
-# Remember to make sure pigpiod service is running!
+# Remember to make sure pigpiod service is running if you intend to log from the DHT11!
 
 import time
 import datetime
@@ -20,6 +20,8 @@ import datedir
 # Set up GPIO, change PIR_PIN, DHT_PIN if you plan to plug your sensors into different GPIO pins.
 GPIO.setmode(GPIO.BCM)
 PIR_PIN = 17
+# Set to True if you're planning to log from a DHT11.
+ENABLE_DHT = False
 DHT_PIN = 18
 GPIO.setup(PIR_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 dhtpin = '-g'+str(DHT_PIN)
@@ -55,13 +57,14 @@ def recordImage2(day_dir):
 
     now = datetime.datetime.now()
     timestamp = now.strftime('%Y-%m-%d_%H-%M-%S')
-    dht_err, temp_c, hum_pct = tempHumidity()
     print "Motion detected: "
     print str(timestamp)
-    if dht_err != 0: print "DHT COMMUNICATIONS ERROR -- CHECK WIRING!"
-    else:
-        print "Temp: "+str(temp_c)+"C"
-        print "Humidity: "+str(hum_pct)+"%"
+    if ENABLE_DHT: 
+        dht_err, temp_c, hum_pct = tempHumidity()
+        if dht_err != 0: print "DHT COMMUNICATIONS ERROR -- CHECK WIRING!"
+        else:
+            print "Temp: "+str(temp_c)+"C"
+            print "Humidity: "+str(hum_pct)+"%"
     h264_save_file_tail = 'owlCam_'+timestamp+'.h264'
     h264_save_file_join = os.path.join(RAW_FILE_HEAD, h264_save_file_tail)
     (save_file_short, save_file_ext) = os.path.splitext(h264_save_file_tail)
@@ -76,7 +79,10 @@ def recordImage2(day_dir):
 #        camera.start_preview()
         time.sleep(2)
         camera.annotate_background = picamera.Color('black')
-        camera.annotate_text = now.strftime('%Y-%m-%d %H:%M:%S')+' Temp: '+str(temp_c)+'C '+'Humidity: '+str(hum_pct)+'%'
+        if ENABLE_DHT:
+            camera.annotate_text = now.strftime('%Y-%m-%d %H:%M:%S')+' Temp: '+str(temp_c)+'C '+'Humidity: '+str(hum_pct)+'%'
+        else:
+            camera.annotate_text = now.strftime('%Y-%m-%d %H:%M:%S')
         camera.resolution = CAM_RESOLUTION
 #        camera.capture_sequence(['/home/pi/owlCam/owlCam_'+timestamp+'_image%02d.jpg' % i for i in range(3)])
 #        camera.start_recording('/home/pi/owlCam/pix/owlCam_'+timestamp+'.h264')
