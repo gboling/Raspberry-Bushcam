@@ -7,25 +7,26 @@
 
 import time
 import datetime
+import sys
 import os
 import subprocess
-
+from collections import namedtuple
 
 import picamera
 import RPi.GPIO as GPIO
 
 import dhtwrapper
 import datedir
+import diskusage
 
 # Set up GPIO, change PIR_PIN, DHT_PIN if you plan to plug your sensors into different GPIO pins.
 GPIO.setmode(GPIO.BCM)
 PIR_PIN = 17
-# Set to True if you're planning to log from a DHT11.
+# Set ENABLE_DHT to True if you're planning to log from a DHT11.
 ENABLE_DHT = False
 DHT_PIN = 18
 GPIO.setup(PIR_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 dhtpin = '-g'+str(DHT_PIN)
-#print "argument conversion test:"+dhtpin
 
 # Camera settings
 FRAME_RATE = 24
@@ -33,11 +34,16 @@ CAM_RESOLUTION = (1280, 720)
 REC_TIME = 15
 
 
-# Some organizational stuff:
+# Where will we store our files? Set a limit (percentage of diskspace free) so we don't fill up the disk.
 RAW_FILE_HEAD = "/home/pi/Videos/owlCamProject"
-global basedir
+FREE_SPACE_LIMIT = 10
 basedir = os.path.join(RAW_FILE_HEAD, "owlCamVid")
-day_dir = "null"
+
+# Classes:
+class DiskFreeThreshold(Exception):
+    def __init__( self, day_dir ):
+        free_pct = diskFree(day_dir)
+        Exception.__init__(self, 'Free Diskspace Threshold Reached exception: %s%% free' % str(free_pct))
 
 def buildDayDir():
     """Make year/month/day directory and export a variable of the day's directory"""
@@ -50,6 +56,13 @@ def tempHumidity():
     global dht_list
     dht_list = dhtwrapper.read_dht(DHT_PIN)
     return dht_list
+
+def diskFree(day_dir):
+    """Get disk usage percentage and turn it into percent free."""
+    u_pct = getattr(diskusage.disk_usage(day_dir), 'percent')
+    global free_pct
+    free_pct = 100 - u_pct
+    return free_pct
 
 def recordImage2(day_dir):
     """Records video from the rpi camera, encodes it to mp4 and copies it to a
@@ -99,23 +112,38 @@ def recordImage2(day_dir):
         if os.path.isfile(mp4_save_file_join):
             print "Cleaning up..."
             os.remove(h264_save_file_join)
+            print "Done cleaning up."
         else:
             print "Transcoding FAILED, "+h264_save_file_join+" must be re-encoded before it will play."
 
 def MOTION(PIR_PIN):
     if GPIO.event_detected(PIR_PIN):
         buildDayDir()
+        global free_pct
+        free_pct = diskFree(day_dir)
+        print "%s%% free on disk" % str(free_pct)
+#        if free_pct < FREE_SPACE_LIMIT: raise DiskFreeThreshold(day_dir)
         recordImage2(day_dir)
+        return free_pct
 
+day_dir = datedir.datedir(basedir)
+free_pct = diskFree(day_dir)
 print "PIR Camera Control Test (CTRL+C to exit)"
 time.sleep(5)
 print "Ready"
 
 try:
     GPIO.add_event_detect(PIR_PIN, GPIO.RISING, callback=MOTION)
-    while 1:
+    while free_pct > FREE_SPACE_LIMIT:
         time.sleep(100)
+    else:
+        raise DiskFreeThreshold(day_dir)
+except DiskFreeThreshold, exc:
+    print exc
+    sys.exit(1)
 
 except KeyboardInterrupt:
     print " Quit"
+
+finally:
     GPIO.cleanup()
