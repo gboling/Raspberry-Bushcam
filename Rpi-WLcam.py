@@ -108,7 +108,7 @@ def recordImage2(day_dir):
         camera.close()
         time.sleep(1)
 # Encode the video file so we can watch it. This is an inefficient way to do this, should learn how to encode from a stream.
-        subprocess.call(['avconv', '-r', str(FRAME_RATE), '-i', h264_save_file_join, '-vcodec', 'copy', mp4_save_file_join])
+        subprocess.call(['avconv', '-i', h264_save_file_join, '-r', str(FRAME_RATE), '-vcodec', 'copy', mp4_save_file_join])
         print "Video encoded to "+mp4_save_file_join
         time.sleep(2)
         if os.path.isfile(mp4_save_file_join):
