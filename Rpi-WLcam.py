@@ -37,6 +37,8 @@ REC_TIME = 15
 # Where will we store our files? Set a limit (percentage of diskspace free) so we don't fill up the disk.
 RAW_FILE_HEAD = "/home/pi/Videos/owlCamProject"
 FREE_SPACE_LIMIT = 10
+# RAW_FILE_TAIL sets the output filename, the timestamp will be appended to this.
+RAW_FILE_TAIL = "owlCam_"
 basedir = os.path.join(RAW_FILE_HEAD, "owlCamVid")
 
 # Classes:
@@ -78,7 +80,7 @@ def recordImage2(day_dir):
         else:
             print "Temp: "+str(temp_c)+"C"
             print "Humidity: "+str(hum_pct)+"%"
-    h264_save_file_tail = 'owlCam_'+timestamp+'.h264'
+    h264_save_file_tail = RAW_FILE_TAIL+timestamp+'.h264'
     h264_save_file_join = os.path.join(RAW_FILE_HEAD, h264_save_file_tail)
     (save_file_short, save_file_ext) = os.path.splitext(h264_save_file_tail)
     mp4_save_file_tail = os.path.join(save_file_short+'.mp4')
@@ -106,7 +108,7 @@ def recordImage2(day_dir):
         camera.close()
         time.sleep(1)
 # Encode the video file so we can watch it. This is an inefficient way to do this, should learn how to encode from a stream.
-        subprocess.call(['avconv', '-r', str(FRAME_RATE), '-i', h264_save_file_join, '-vcodec', 'copy', mp4_save_file_join])
+        subprocess.call(['avconv', '-i', h264_save_file_join, '-r', str(FRAME_RATE), '-vcodec', 'copy', mp4_save_file_join])
         print "Video encoded to "+mp4_save_file_join
         time.sleep(2)
         if os.path.isfile(mp4_save_file_join):
@@ -138,6 +140,7 @@ try:
         time.sleep(100)
     else:
         raise DiskFreeThreshold(day_dir)
+
 except DiskFreeThreshold, exc:
     print exc
     sys.exit(1)
