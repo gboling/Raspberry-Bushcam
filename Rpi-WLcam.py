@@ -29,7 +29,7 @@ GPIO.setup(PIR_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 dhtpin = '-g'+str(DHT_PIN)
 
 # Camera settings
-FRAME_RATE = 24
+FRAME_RATE = 25
 CAM_RESOLUTION = (1280, 720)
 REC_TIME = 15
 
