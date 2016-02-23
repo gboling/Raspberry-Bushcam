@@ -6,6 +6,7 @@ add all dependencies to README
 add logging options
     add disk space WARNING when we get to 2x DISK_FREE_LIMIT -- should send an email
     stop avconv writing to stdout, make it DEBUG level
+    separate loggers for PIR, video transodes, and temp/humidity
 
 write backup script:
 	user configurable backup frequency (hours/days/weeks)
