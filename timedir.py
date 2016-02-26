@@ -17,41 +17,7 @@ from collections import namedtuple
 
 timedir_ntuple = namedtuple('timedir', 'yearDir monthDir dayDir hourDir minDir')
 mtimedir_ntuple = namedtuple('mtimedir', 'yearDir monthDir dayDir hourDir minDir mtime mdtime')
-parser = argparse.ArgumentParser(description='Make a directory tree for year-month-day-hour-minute.')
-parser.add_argument('output_dir',
-                    default=os.getcwd(),
-                    help="Specify the base directory."
-                    )
-parser.add_argument('-v', '--verbose',
-                    dest="verbose",
-                    default=False,
-                    action='store_true',
-                    )
-parser.add_argument('-s', '--scope',
-                    dest="scope",
-                    choices=["year", "month", "day", "hour", "min"],
-                    default="day",
-                    help="Specify how deep to make the directory tree."
-                    )
-
-args = parser.parse_args()
-output_dir = args.output_dir
-
-if args.scope == "year":
-    scopelevel = 0
-
-if args.scope == "month":
-    scopelevel = 1
-
-if args.scope == "day":
-    scopelevel = 2
-
-if args.scope == "hour":
-    scopelevel = 3
-
-if args.scope == "min":
-    scopelevel = 4
-
+output_dir = ''
 
 def nowdir(output_dir, scopelevel):
 
@@ -106,6 +72,37 @@ def mtimedir(mtime_file, mtoutput_dir):
     return mtimedir_ntuple(mtyear_dir, mtmonth_dir, mtday_dir, mthour_dir, mtmin_dir, mtime, mdtime)
 
 def main(output_dir):
+
+    td_parser = argparse.ArgumentParser(description='Make a directory tree for year-month-day-hour-minute.')
+    td_parser.add_argument('output_dir',
+                            default=os.getcwd(),
+                            help="Specify the base directory."
+                            )
+    td_parser.add_argument('-v', '--verbose',
+                            dest="verbose",
+                            default=False,
+                            action='store_true',
+                            )
+    td_parser.add_argument('-s', '--scope',
+                            dest="scope",
+                            choices=["year", "month", "day", "hour", "min"],
+                            default="day",
+                            help="Specify how deep to make the directory tree."
+                            )
+
+    td_args = td_parser.parse_args()
+    output_dir = td_args.output_dir
+
+    if td_args.scope == "year": scopelevel = 0
+
+    if td_args.scope == "month": scopelevel = 1
+
+    if td_args.scope == "day": scopelevel = 2
+
+    if td_args.scope == "hour": scopelevel = 3
+
+    if td_args.scope == "min": scopelevel = 4
+
     nowdir(output_dir)
 
 if __name__ == '__main__':

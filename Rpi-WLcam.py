@@ -27,7 +27,6 @@ import diskusage
 GPIO.setmode(GPIO.BCM)
 PIR_PIN = 17
 # Set ENABLE_DHT to True if you're planning to log from a DHT11.
-ENABLE_DHT = False
 DHT_PIN = 18
 GPIO.setup(PIR_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 dhtpin = '-g'+str(DHT_PIN)
@@ -37,29 +36,33 @@ FRAME_RATE = 25
 CAM_RESOLUTION = (1280, 720)
 REC_TIME = 15
 
-
-
-parser = argparse.ArgumentParser(description='Record video on a Raspberry Pi 2 triggered by PIR sensor. Also records temp/humidity from DHT11.')
-parser.add_argument('FILE_HEAD_ARG',
+wlc_parser = argparse.ArgumentParser(description='Record video on a Raspberry Pi 2 triggered by PIR sensor. Also records temp/humidity from DHT11.')
+wlc_parser.add_argument('FILE_HEAD_ARG',
                     default=os.getcwd(),
                     help="Specify the base directory."
                     )
-parser.add_argument('-v', '--verbose',
+wlc_parser.add_argument('-v', '--verbose',
                     dest="verbose",
                     default=False,
                     action='store_true',
                     )
-parser.add_argument('-s', '--scope',
+wlc_parser.add_argument('-s', '--scope',
                     dest="scope",
                     choices=["year", "month", "day", "hour", "min"],
                     default="day",
                     help="Specify how deep to make the directory tree."
                     )
+wlc_parser.add_argument('-T', '--enable-temp',
+                    dest="ENABLE_DHT",
+                    default=False,
+                    action='store_true',
+                    help="Enable temperature and humidity logging from DHT11."
+                    )
 
-args = parser.parse_args()
+wlc_args = wlc_parser.parse_args()
 
 # Directory for raw video files and logs.
-FILE_HEAD_ARG = args.FILE_HEAD_ARG
+FILE_HEAD_ARG = wlc_args.FILE_HEAD_ARG
 #  Set a limit (percentage of diskspace free) so we don't fill up the disk.
 FREE_SPACE_LIMIT = 10
 # RAW_FILE_TAIL sets the output filename, the timestamp will be appended to this.
@@ -67,22 +70,17 @@ RAW_FILE_TAIL = "owlCam_"
 # Directory for video output, organized by year/month/day.
 MP4_FILE_HEAD = "owlCamMP4"
 output_dir = os.path.join(FILE_HEAD_ARG, MP4_FILE_HEAD)
+ENABLE_DHT = wlc_args.ENABLE_DHT
 
-if args.scope == "year":
-        scopelevel = 0
+if wlc_args.scope == "year": scopelevel = 0
 
-if args.scope == "month":
-        scopelevel = 1
+if wlc_args.scope == "month": scopelevel = 1
 
-if args.scope == "day":
-        scopelevel = 2
+if wlc_args.scope == "day": scopelevel = 2
 
-if args.scope == "hour":
-        scopelevel = 3
+if wlc_args.scope == "hour": scopelevel = 3
 
-if args.scope == "min":
-        scopelevel = 4
-
+if wlc_args.scope == "min": scopelevel = 4
 
 # Classes:
 class DiskFreeThreshold(Exception):
