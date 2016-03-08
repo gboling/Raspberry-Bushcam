@@ -39,7 +39,7 @@ REC_TIME = 15
 wlc_parser = argparse.ArgumentParser(description='Record video on a Raspberry Pi 2 triggered by PIR sensor. Also records temp/humidity from DHT11.')
 wlc_parser.add_argument('FILE_HEAD_ARG',
                     default=os.getcwd(),
-                    help="Specify the base directory."
+                    help="Specify the video output directory."
                     )
 wlc_parser.add_argument('-v', '--verbose',
                     dest="verbose",
@@ -72,15 +72,15 @@ MP4_FILE_HEAD = "owlCamMP4"
 output_dir = os.path.join(FILE_HEAD_ARG, MP4_FILE_HEAD)
 ENABLE_DHT = wlc_args.ENABLE_DHT
 
-if wlc_args.scope == "year": scopelevel = 0
+if wlc_args.scope == "year": scopelevel = 0; scopedir = "yearDir"
 
-if wlc_args.scope == "month": scopelevel = 1
+if wlc_args.scope == "month": scopelevel = 1; scopedir = "monthDir"
 
-if wlc_args.scope == "day": scopelevel = 2
+if wlc_args.scope == "day": scopelevel = 2; scopedir = "dayDir"
 
-if wlc_args.scope == "hour": scopelevel = 3
+if wlc_args.scope == "hour": scopelevel = 3; scopedir = "hourDir"
 
-if wlc_args.scope == "min": scopelevel = 4
+if wlc_args.scope == "min": scopelevel = 4; scopedir = "minDir"
 
 # Classes:
 class DiskFreeThreshold(Exception):
@@ -92,7 +92,7 @@ def buildDayDir():
     """Make year/month/day directory and export a variable of the day's directory"""
     global day_dir
     timedir.nowdir(output_dir, scopelevel)
-    day_dir = getattr(timedir.nowdir(output_dir, scopelevel), 'dayDir')
+    day_dir = getattr(timedir.nowdir(output_dir, scopelevel), scopedir)
     return day_dir
 
 def tempHumidity():
@@ -133,7 +133,7 @@ def recordImage2(day_dir):
         camera.hflip = True
         camera.exposure_mode = ('night')
         camera.framerate = FRAME_RATE
-#        camera.start_preview()
+        camera.start_preview()
         time.sleep(2)
         camera.annotate_background = picamera.Color('black')
         if ENABLE_DHT:
