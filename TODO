@@ -4,6 +4,7 @@ encode to mp4 from stream instead of a file to cut down on disk writes
 add a countdown to the warmup sequence
 set up to use configuration files
 add all dependencies to README
+implement verbose output
 add logging options
     add disk space WARNING when we get to 2x DISK_FREE_LIMIT -- should send an email
     stop avconv writing to stdout, make it DEBUG level
