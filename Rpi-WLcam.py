@@ -39,12 +39,13 @@ REC_TIME = 15
 wlc_parser = argparse.ArgumentParser(description='Record video on a Raspberry Pi 2 triggered by PIR sensor. Also records temp/humidity from DHT11.')
 wlc_parser.add_argument('FILE_HEAD_ARG',
                     default=os.getcwd(),
-                    help="Specify the video output directory."
+                    help="Specify the output directory, will be created if it does not exist."
                     )
 wlc_parser.add_argument('-v', '--verbose',
                     dest="verbose",
                     default=False,
                     action='store_true',
+                    help="Not implemented yet."
                     )
 wlc_parser.add_argument('-s', '--scope',
                     dest="scope",
@@ -84,16 +85,16 @@ if wlc_args.scope == "min": scopelevel = 4; scopedir = "minDir"
 
 # Classes:
 class DiskFreeThreshold(Exception):
-    def __init__( self, day_dir ):
-        free_pct = diskFree(day_dir)
+    def __init__( self, working_dir ):
+        free_pct = diskFree(working_dir)
         Exception.__init__(self, 'Free Diskspace Threshold Reached exception: %s%% free' % str(free_pct))
 
 def buildDayDir():
     """Make year/month/day directory and export a variable of the day's directory"""
-    global day_dir
+    global working_dir
     timedir.nowdir(output_dir, scopelevel)
-    day_dir = getattr(timedir.nowdir(output_dir, scopelevel), scopedir)
-    return day_dir
+    working_dir = getattr(timedir.nowdir(output_dir, scopelevel), scopedir)
+    return working_dir
 
 def tempHumidity():
     """Query the DHT11 Temp/Humidity sensor and set variables."""
@@ -101,14 +102,14 @@ def tempHumidity():
     dht_list = dhtwrapper.read_dht(DHT_PIN)
     return dht_list
 
-def diskFree(day_dir):
+def diskFree(working_dir):
     """Get disk usage percentage and turn it into percent free."""
-    u_pct = getattr(diskusage.disk_usage(day_dir), 'percent')
+    u_pct = getattr(diskusage.disk_usage(working_dir), 'percent')
     global free_pct
     free_pct = 100 - u_pct
     return free_pct
 
-def recordImage2(day_dir):
+def recordImage2(working_dir):
     """Records video from the rpi camera, encodes it to mp4 and copies it to a
     directory for that calendar date."""
 
@@ -126,7 +127,7 @@ def recordImage2(day_dir):
     h264_save_file_join = os.path.join(FILE_HEAD_ARG, h264_save_file_tail)
     (save_file_short, save_file_ext) = os.path.splitext(h264_save_file_tail)
     mp4_save_file_tail = os.path.join(save_file_short+'.mp4')
-    mp4_save_file_join = os.path.join(day_dir, mp4_save_file_tail)
+    mp4_save_file_join = os.path.join(working_dir, mp4_save_file_tail)
     with picamera.PiCamera() as camera:
         camera.led = False
         camera.vflip = True
@@ -164,14 +165,14 @@ def MOTION(PIR_PIN):
     if GPIO.event_detected(PIR_PIN):
         buildDayDir()
         global free_pct
-        free_pct = diskFree(day_dir)
+        free_pct = diskFree(working_dir)
         print "%s%% free on disk" % str(free_pct)
-        recordImage2(day_dir)
+        recordImage2(working_dir)
         return free_pct
 
 #logging.basicConfig(filename=RAW_FILE_HEAD. loglevel=logging.DEBUG)
-day_dir = getattr(timedir.nowdir(output_dir, scopelevel), 'dayDir')
-free_pct = diskFree(day_dir)
+working_dir = getattr(timedir.nowdir(output_dir, scopelevel), scopedir)
+free_pct = diskFree(working_dir)
 print "PIR Camera Control Test (CTRL+C to exit)"
 time.sleep(5)
 print "Ready"
@@ -181,7 +182,7 @@ try:
     while free_pct > FREE_SPACE_LIMIT:
         time.sleep(100)
     else:
-        raise DiskFreeThreshold(day_dir)
+        raise DiskFreeThreshold(working_dir)
 
 except DiskFreeThreshold, exc:
     print exc
