@@ -14,11 +14,4 @@ def read_dht(DHT_PIN):
     do = str(dht_output[0])
     dl = do.rstrip()
     dht_list = map(float, dl.split(' '))
-#    _dhterr = dht_list[0]
-#    _temp = dht_list[1]
-#    _hum = dht_list[2]
-#    print "Temp: "+str(_temp)+"C"
-#    print "Humidity: "+str(_hum)+"%"
-#
-#if _dhterr != 0: print "DHT11 COMMUNICATIONS ERROR -- CHECK WIRING!"
     return dht_list
