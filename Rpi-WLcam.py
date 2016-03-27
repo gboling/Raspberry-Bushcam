@@ -29,6 +29,7 @@ PIR_PIN = 17
 # Set ENABLE_DHT to True if you're planning to log from a DHT11.
 DHT_PIN = 18
 GPIO.setup(PIR_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+GPIO.setup(DHT_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 dhtpin = '-g'+str(DHT_PIN)
 
 # Camera settings
