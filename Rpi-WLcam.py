@@ -25,17 +25,19 @@ import diskusage
 
 # Set up GPIO, change PIR_PIN, DHT_PIN if you plan to plug your sensors into different GPIO pins.
 GPIO.setmode(GPIO.BCM)
-PIR_PIN = 17
+config = {}
+execfile("rpi-wlcam.conf", config)
+PIR_PIN = config["pir_pin"]
 # Set ENABLE_DHT to True if you're planning to log from a DHT11.
-DHT_PIN = 18
+DHT_PIN = config["dht_pin"]
 GPIO.setup(PIR_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 GPIO.setup(DHT_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 dhtpin = '-g'+str(DHT_PIN)
 
 # Camera settings
-FRAME_RATE = 25
-CAM_RESOLUTION = (1280, 720)
-REC_TIME = 15
+FRAME_RATE = config["frame_rate"]
+CAM_RESOLUTION = config["resolution"]
+REC_TIME = config["rec_time"]
 
 wlc_parser = argparse.ArgumentParser(description='Record video on a Raspberry Pi 2 triggered by PIR sensor. Also records temp/humidity from DHT11.')
 wlc_parser.add_argument('FILE_HEAD_ARG',
@@ -66,11 +68,11 @@ wlc_args = wlc_parser.parse_args()
 # Directory for raw video files and logs.
 FILE_HEAD_ARG = wlc_args.FILE_HEAD_ARG
 #  Set a limit (percentage of diskspace free) so we don't fill up the disk.
-FREE_SPACE_LIMIT = 10
+FREE_SPACE_LIMIT = config["diskspace_limit"]
 # RAW_FILE_TAIL sets the output filename, the timestamp will be appended to this.
-RAW_FILE_TAIL = "owlCam_"
+RAW_FILE_TAIL = config["h264filename_base"]
 # Directory for video output, organized by year/month/day.
-MP4_FILE_HEAD = "owlCamMP4"
+MP4_FILE_HEAD = config["mp4filename_base"]
 output_dir = os.path.join(FILE_HEAD_ARG, MP4_FILE_HEAD)
 ENABLE_DHT = wlc_args.ENABLE_DHT
 
