@@ -90,7 +90,7 @@ class DiskFreeThreshold(Exception):
         free_pct = diskFree(working_dir)
         Exception.__init__(self, 'Free Diskspace Threshold Reached exception: %s%% free' % str(free_pct))
 
-def buildDayDir():
+def buildOutputDir():
     """Make year/month/day directory and export a variable of the day's directory"""
     global working_dir
     timedir.nowdir(output_dir, scopelevel)
@@ -164,7 +164,7 @@ def recordImage2(working_dir):
 
 def MOTION(PIR_PIN):
     if GPIO.event_detected(PIR_PIN):
-        buildDayDir()
+        buildOutputDir()
         global free_pct
         free_pct = diskFree(working_dir)
         print "%s%% free on disk" % str(free_pct)
