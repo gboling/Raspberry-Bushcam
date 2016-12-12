@@ -1,4 +1,4 @@
-check if pigpiod is running prior to calling dht stuff -- if not then disable temp/humidity stuff
+check if pigpiod is running prior to calling dht stuff -- if not then disable temp/humidity stuff. May be obsolete due to inclusion in raspbian.
 check if camera is already in use and call exception if so.
 encode to mp4 from stream instead of a file to cut down on disk writes
 add a countdown to the warmup sequence
@@ -19,5 +19,5 @@ write backup script:
 handle running modules as stand-alone and give them useful cli guidance.
 
 fritzing diagram or schematic
-web interface (crib from picroscopy)
+web interface (crib from picroscopy)/ HUD via curses
 optional live stream
