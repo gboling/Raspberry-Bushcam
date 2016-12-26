@@ -23,13 +23,15 @@ import dhtwrapper
 import timedir
 import diskusage
 
-# Set up GPIO, change PIR_PIN, DHT_PIN if you plan to plug your sensors into different GPIO pins.
-GPIO.setmode(GPIO.BCM)
 config = {}
-execfile("rpi-wlcam.conf", config)
+execfile("raspberry-bushcam.conf", config)
+if config["bcm_mode"]:
+    GPIO.setmode(GPIO.BCM)
+else:
+    GPIO.setmode(GPIO.BOARD)
 PIR_PIN = config["pir_pin"]
-# Set ENABLE_DHT to True if you're planning to log from a DHT11.
 DHT_PIN = config["dht_pin"]
+cam_led_enable = config["cam_led_enable"]
 GPIO.setup(PIR_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 GPIO.setup(DHT_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 dhtpin = '-g'+str(DHT_PIN)
@@ -132,7 +134,7 @@ def recordImage2(working_dir):
     mp4_save_file_tail = os.path.join(save_file_short+'.mp4')
     mp4_save_file_join = os.path.join(working_dir, mp4_save_file_tail)
     with picamera.PiCamera() as camera:
-        camera.led = False
+        camera.led = cam_led_enable
         camera.vflip = True
         camera.hflip = True
         camera.exposure_mode = ('night')
