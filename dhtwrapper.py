@@ -11,7 +11,7 @@ def read_dht(DHT_PIN):
     _dhtpin = '-g'+str(DHT_PIN)
     dht_read = subprocess.Popen(['DHTXXD', _dhtpin], stdout=subprocess.PIPE,)
     dht_output = dht_read.communicate()
-    do = str(dht_output[0])
-    dl = do.rstrip()
+    d_str = str(dht_output[0])
+    dl = d_str.rstrip()
     dht_list = map(float, dl.split(' '))
     return dht_list
