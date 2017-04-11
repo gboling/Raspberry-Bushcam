@@ -21,3 +21,7 @@ handle running modules as stand-alone and give them useful cli guidance.
 fritzing diagram or schematic
 web interface (crib from picroscopy)/ HUD via curses
 optional live stream
+
+~~~
+Is it possible to hack apart a cheap solar charging usb battery such that the
+capacity and charge rate can be monitored? Can a generalized process be described?
