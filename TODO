@@ -3,6 +3,7 @@ check if camera is already in use and call exception if so.
 encode to mp4 from stream instead of a file to cut down on disk writes
 add a countdown to the warmup sequence
 set up to use configuration files
+echo basic configuration at startup (resolution, length per recording)
 add all dependencies to README
 implement verbose output
 add logging options
