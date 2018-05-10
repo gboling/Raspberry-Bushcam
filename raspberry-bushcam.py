@@ -19,7 +19,7 @@ from collections import namedtuple
 import picamera
 import RPi.GPIO as GPIO
 
-import dhtwrapper
+import Adafruit_DHT
 import timedir
 import diskusage
 
@@ -30,6 +30,7 @@ if config["bcm_mode"]:
 else:
     GPIO.setmode(GPIO.BOARD)
 PIR_PIN = config["pir_pin"]
+DHT_TYPE = config["dht_type"]
 DHT_PIN = config["dht_pin"]
 cam_led_enable = config["cam_led_enable"]
 GPIO.setup(PIR_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
@@ -104,7 +105,7 @@ def buildOutputDir():
 def tempHumidity():
     """Query the DHT11 Temp/Humidity sensor and set variables."""
     global dht_list
-    dht_list = dhtwrapper.read_dht(DHT_PIN)
+    dht_list = Adafruit_DHT.read_retry(DHT_TYPE, DHT_PIN)
     return dht_list
 
 def diskFree(working_dir):
@@ -123,11 +124,9 @@ def recordImage2(working_dir):
     print "Motion detected: "
     print str(timestamp)
     if ENABLE_DHT:
-        dht_err, temp_c, hum_pct = tempHumidity()
-        if dht_err != 0: print "DHT COMMUNICATIONS ERROR -- CHECK WIRING!"
-        else:
-            print "Temp: "+str(temp_c)+"C"
-            print "Humidity: "+str(hum_pct)+"%"
+        hum_pct, temp_c = tempHumidity()
+        print "Temp: "+str(temp_c)+"C"
+        print "Humidity: "+str(hum_pct)+"%"
     h264_save_file_tail = RAW_FILE_TAIL+timestamp+'.h264'
     h264_save_file_join = os.path.join(FILE_HEAD_ARG, h264_save_file_tail)
     (save_file_short, save_file_ext) = os.path.splitext(h264_save_file_tail)
