@@ -15,6 +15,8 @@ Raspbian Jessie,
 pigpiod http://abyz.co.uk/rpi/pigpio/pigpiod.html
 https://github.com/adafruit/Adafruit_Python_DHT
 
-PIR sensor should be plugged into GPIO pin 17
-DHT sensor should be plugged into GPIO pin 18
+Default GPIO inputs:
+PIR : GPIO pin 17
+DHT : GPIO pin 18
 
+See raspberry-bushcam.conf for configuration.
