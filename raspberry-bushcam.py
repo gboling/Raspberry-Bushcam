@@ -20,6 +20,7 @@ import picamera
 import RPi.GPIO as GPIO
 
 import Adafruit_DHT
+import MySQLdb
 import timedir
 import diskusage
 
@@ -35,12 +36,20 @@ DHT_PIN = config["dht_pin"]
 cam_led_enable = config["cam_led_enable"]
 GPIO.setup(PIR_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 GPIO.setup(DHT_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-dhtpin = '-g'+str(DHT_PIN)
 
 # Camera settings
 FRAME_RATE = config["frame_rate"]
 CAM_RESOLUTION = config["resolution"]
 REC_TIME = config["rec_time"]
+
+# SQL settings
+mysql_enable = config["mysql_enable"]
+mysql_host = config["mysql_host"]
+mysql_user = config["mysql_user"]
+mysql_pw = config["mysql_pw"]
+mysql_db = config["mysql_db"]
+conn = MySQLdb.connect(host= mysql_host, user= mysql_user, passwd=mysql_pw, db=mysql_db)
+c=conn.cursor()
 
 wlc_parser = argparse.ArgumentParser(description='Record video on a Raspberry Pi 2 triggered by PIR sensor. Also records temp/humidity from DHT11.')
 wlc_parser.add_argument('FILE_HEAD_ARG',
@@ -95,6 +104,15 @@ class DiskFreeThreshold(Exception):
         free_pct = diskFree(working_dir)
         Exception.__init__(self, 'Free Diskspace Threshold Reached exception: %s%% free' % str(free_pct))
 
+def MOTION(PIR_PIN):
+    if GPIO.event_detected(PIR_PIN):
+        buildOutputDir()
+        global free_pct
+        free_pct = diskFree(working_dir)
+        print "%s%% free on disk" % str(free_pct)
+        recordImage2(working_dir)
+        return free_pct
+
 def buildOutputDir():
     """Make year/month/day directory and export a variable of the day's directory"""
     global working_dir
@@ -104,9 +122,16 @@ def buildOutputDir():
 
 def tempHumidity():
     """Query the DHT11 Temp/Humidity sensor and set variables."""
-    global dht_list
-    dht_list = Adafruit_DHT.read_retry(DHT_TYPE, DHT_PIN)
-    return dht_list
+    global temp, humidity
+    (humidity, temp) = Adafruit_DHT.read_retry(DHT_TYPE, DHT_PIN)
+    return (temp, humidity)
+
+def writesql(timestamp, temp, humidity):
+    """Record temp humidity and time to sql database."""
+    c.execute("INSERT INTO readings (Date, Temperature, Humidity) VALUES (%s, %s, %s)",(timestamp, temp, humidity))
+    conn.commit()
+    print "Sensor data recorded to mysql database: "+mysql_db
+    return
 
 def diskFree(working_dir):
     """Get disk usage percentage and turn it into percent free."""
@@ -124,7 +149,7 @@ def recordImage2(working_dir):
     print "Motion detected: "
     print str(timestamp)
     if ENABLE_DHT:
-        hum_pct, temp_c = tempHumidity()
+        temp_c, hum_pct = tempHumidity()
         print "Temp: "+str(temp_c)+"C"
         print "Humidity: "+str(hum_pct)+"%"
     h264_save_file_tail = RAW_FILE_TAIL+timestamp+'.h264'
@@ -158,21 +183,13 @@ def recordImage2(working_dir):
         subprocess.call(['avconv', '-i', h264_save_file_join, '-r', str(FRAME_RATE), '-vcodec', 'copy', mp4_save_file_join])
         print "Video encoded to "+mp4_save_file_join
         time.sleep(2)
+        if mysql_enable: writesql(timestamp, temp, humidity)
         if os.path.isfile(mp4_save_file_join):
             print "Cleaning up..."
             os.remove(h264_save_file_join)
             print "Done cleaning up."
         else:
             print "Transcoding FAILED, "+h264_save_file_join+" must be re-encoded before it will play."
-
-def MOTION(PIR_PIN):
-    if GPIO.event_detected(PIR_PIN):
-        buildOutputDir()
-        global free_pct
-        free_pct = diskFree(working_dir)
-        print "%s%% free on disk" % str(free_pct)
-        recordImage2(working_dir)
-        return free_pct
 
 #logging.basicConfig(filename=RAW_FILE_HEAD. loglevel=logging.DEBUG)
 working_dir = getattr(timedir.nowdir(output_dir, scopelevel), scopedir)
@@ -197,3 +214,5 @@ except KeyboardInterrupt:
 
 finally:
     GPIO.cleanup()
+    c.close
+    conn.close()
