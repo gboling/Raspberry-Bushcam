@@ -12,7 +12,6 @@ Dependencies:
 Raspberry Pi 2 B with Camera, picamera-dev
 PIR sensor,
 Raspbian Jessie,
-pigpiod http://abyz.co.uk/rpi/pigpio/pigpiod.html
 https://github.com/adafruit/Adafruit_Python_DHT
 
 Default GPIO inputs:
