@@ -147,7 +147,7 @@ def writesql(timestamp, temp, humidity):
     """Record temp humidity and time to sql database."""
     c.execute("INSERT INTO readings (Date, Temperature, Humidity) VALUES (%s, %s, %s)",(timestamp, temp, humidity))
     conn.commit()
-    print "Sensor data recorded to mysql database: "+mysql_db
+    print "Sensor data recorded to mysql database: "+mysql_db+" at "+timestamp
     return
 
 def getTimestamp():
@@ -159,9 +159,9 @@ def getTimestamp():
 
 def sampleRecord():
     """Get a timestamp, data from sensor, and record it to a database or file."""
-    getTimestamp()
-    tempHumidity()
-    writesql(timestamp, temp, humidity)
+    ts = getTimestamp()
+    (temp_samp, hum_samp) = tempHumidity()
+    writesql(timestamp, temp_samp, hum_samp)
     return
 
 def diskFree(working_dir):
@@ -221,7 +221,7 @@ def recordImage2(working_dir):
 #logging.basicConfig(filename=RAW_FILE_HEAD. loglevel=logging.DEBUG)
 working_dir = getattr(timedir.nowdir(output_dir, scopelevel), scopedir)
 free_pct = diskFree(working_dir)
-if sampFreq: schedule.every(sampFreq).seconds.do(sampleRecord)
+if sampFreq: schedule.every(sampFreq).seconds.do(run_threaded, sampleRecord)
 print "PIR Camera Control Test (CTRL+C to exit)"
 time.sleep(5)
 print "Ready"
