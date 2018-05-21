@@ -4,7 +4,6 @@
 PIR control of the rpi camera with DHT sensor, automatically sorting new video into directories by date.
 by J. Grant Boling: gboling [at] gmail [dot] com
 with guidance from http://nestboxtech.blogspot.co.uk/2014/11/how-to-make-your-own-raspberry-pi-trail.html
-Remember to make sure pigpiod service is running if you intend to log from the DHT11!
 """
 
 import time
@@ -23,6 +22,8 @@ import Adafruit_DHT
 import MySQLdb
 import timedir
 import diskusage
+import schedule
+import threading
 
 config = {}
 execfile("raspberry-bushcam.conf", config)
@@ -51,6 +52,7 @@ mysql_db = config["mysql_db"]
 conn = MySQLdb.connect(host= mysql_host, user= mysql_user, passwd=mysql_pw, db=mysql_db)
 c=conn.cursor()
 
+# Deal with command-line arguments
 wlc_parser = argparse.ArgumentParser(description='Record video on a Raspberry Pi 2 triggered by PIR sensor. Also records temp/humidity from DHT11.')
 wlc_parser.add_argument('FILE_HEAD_ARG',
                     default=os.getcwd(),
@@ -68,11 +70,16 @@ wlc_parser.add_argument('-s', '--scope',
                     default="day",
                     help="Specify how deep to make the directory tree."
                     )
-wlc_parser.add_argument('-T', '--enable-temp',
+wlc_parser.add_argument('-t', '--enable-temp',
                     dest="ENABLE_DHT",
                     default=False,
                     action='store_true',
                     help="Enable temperature and humidity logging from DHT11."
+                    )
+wlc_parser.add_argument('-f', '--sampling-frequency',
+                    dest="sampFreq",
+                    default="60",
+                    help="Record temperature and humidity every x seconds.",
                     )
 
 wlc_args = wlc_parser.parse_args()
@@ -87,6 +94,10 @@ RAW_FILE_TAIL = config["h264filename_base"]
 MP4_FILE_HEAD = config["mp4filename_base"]
 output_dir = os.path.join(FILE_HEAD_ARG, MP4_FILE_HEAD)
 ENABLE_DHT = wlc_args.ENABLE_DHT
+sampFreq = int(wlc_args.sampFreq)
+now = datetime.datetime.now()
+timestamp = now.strftime('%Y-%m-%d_%H-%M-%S')
+(humidity, temp) = Adafruit_DHT.read_retry(DHT_TYPE, DHT_PIN)
 
 if wlc_args.scope == "year": scopelevel = 0; scopedir = "yearDir"
 
@@ -120,10 +131,16 @@ def buildOutputDir():
     working_dir = getattr(timedir.nowdir(output_dir, scopelevel), scopedir)
     return working_dir
 
+def run_threaded(job_func):
+    job_thread = threading.Thread(target=job_func)
+    job_thread.start()
+
 def tempHumidity():
     """Query the DHT11 Temp/Humidity sensor and set variables."""
     global temp, humidity
     (humidity, temp) = Adafruit_DHT.read_retry(DHT_TYPE, DHT_PIN)
+    print "Temp: "+str(temp)+"C"
+    print "Humidity: "+str(humidity)+"%"
     return (temp, humidity)
 
 def writesql(timestamp, temp, humidity):
@@ -131,6 +148,20 @@ def writesql(timestamp, temp, humidity):
     c.execute("INSERT INTO readings (Date, Temperature, Humidity) VALUES (%s, %s, %s)",(timestamp, temp, humidity))
     conn.commit()
     print "Sensor data recorded to mysql database: "+mysql_db
+    return
+
+def getTimestamp():
+    """Find out what time it is and apply it to the timestamp variable."""
+    global timestamp
+    now = datetime.datetime.now()
+    timestamp = now.strftime('%Y-%m-%d_%H-%M-%S')
+    return timestamp
+
+def sampleRecord():
+    """Get a timestamp, data from sensor, and record it to a database or file."""
+    getTimestamp()
+    tempHumidity()
+    writesql(timestamp, temp, humidity)
     return
 
 def diskFree(working_dir):
@@ -143,15 +174,11 @@ def diskFree(working_dir):
 def recordImage2(working_dir):
     """Records video from the rpi camera, encodes it to mp4 and copies it to a
     directory for that calendar date."""
-
-    now = datetime.datetime.now()
-    timestamp = now.strftime('%Y-%m-%d_%H-%M-%S')
+    getTimestamp()
     print "Motion detected: "
     print str(timestamp)
     if ENABLE_DHT:
         temp_c, hum_pct = tempHumidity()
-        print "Temp: "+str(temp_c)+"C"
-        print "Humidity: "+str(hum_pct)+"%"
     h264_save_file_tail = RAW_FILE_TAIL+timestamp+'.h264'
     h264_save_file_join = os.path.join(FILE_HEAD_ARG, h264_save_file_tail)
     (save_file_short, save_file_ext) = os.path.splitext(h264_save_file_tail)
@@ -194,14 +221,17 @@ def recordImage2(working_dir):
 #logging.basicConfig(filename=RAW_FILE_HEAD. loglevel=logging.DEBUG)
 working_dir = getattr(timedir.nowdir(output_dir, scopelevel), scopedir)
 free_pct = diskFree(working_dir)
+if sampFreq: schedule.every(sampFreq).seconds.do(sampleRecord)
 print "PIR Camera Control Test (CTRL+C to exit)"
 time.sleep(5)
 print "Ready"
+print "Started at "+timestamp
 
 try:
     GPIO.add_event_detect(PIR_PIN, GPIO.RISING, callback=MOTION)
     while free_pct > FREE_SPACE_LIMIT:
-        time.sleep(100)
+        schedule.run_pending()
+        time.sleep(1)
     else:
         raise DiskFreeThreshold(working_dir)
 

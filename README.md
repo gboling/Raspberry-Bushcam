@@ -13,6 +13,7 @@ Raspberry Pi 2 B with Camera, picamera-dev
 PIR sensor,
 Raspbian Jessie,
 https://github.com/adafruit/Adafruit_Python_DHT
+https://github.com/dbader/schedule
 
 Default GPIO inputs:
 PIR : GPIO pin 17
