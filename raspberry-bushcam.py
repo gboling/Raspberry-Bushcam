@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 """
-PIR control of the rpi camera with DHT sensor, automatically sorting new video into directories by date.
+PIR control of the Raspberry Pi camera with DHT sensor, automatically sorting new video into directories by date.
+Optionally writes to mysql database at user-defined interval.
 by J. Grant Boling: gboling [at] gmail [dot] com
 with guidance from http://nestboxtech.blogspot.co.uk/2014/11/how-to-make-your-own-raspberry-pi-trail.html
 """
@@ -117,10 +118,14 @@ class DiskFreeThreshold(Exception):
 
 def MOTION(PIR_PIN):
     if GPIO.event_detected(PIR_PIN):
+        ts = getTimestamp()
+        print "Motion detected at: "+ts
         buildOutputDir()
         global free_pct
+        global mp4_save_file_join
         free_pct = diskFree(working_dir)
         print "%s%% free on disk" % str(free_pct)
+#        run_threaded(recordImage2(working_dir))
         recordImage2(working_dir)
         return free_pct
 
@@ -143,9 +148,21 @@ def tempHumidity():
     print "Humidity: "+str(humidity)+"%"
     return (temp, humidity)
 
-def writesql(timestamp, temp, humidity):
+def writesql(timestamp, temp, humidity, *mp4_save_file_join):
     """Record temp humidity and time to sql database."""
-    c.execute("INSERT INTO readings (Date, Temperature, Humidity) VALUES (%s, %s, %s)",(timestamp, temp, humidity))
+    if mp4_save_file_join:
+        (filename,) = mp4_save_file_join
+        print filename
+        fn_insert = 'INSERT INTO readings (Timestamp, Temperature, Humidity, video_filename) VALUES (\'{0}\', \'{1}\', \'{2}\', \'{3}\')'
+        fn_ondupe = ' ON DUPLICATE KEY UPDATE video_filename = \'{0}\';'.format(filename)
+        fn_query = fn_insert.format(timestamp, temp, humidity, filename)
+        print "SQL COMMAND: "+fn_query
+#        print "SQL COMMAND: "+fn_ondupe
+        c.execute(fn_query)
+#        c.execute(fn_ondupe)
+#        c.execute("INSERT INTO readings (Timestamp, Temperature, Humidity, video_filename) VALUES (%s, %s, %s, %s)",(timestamp, temp, humidity, mp4_save_file_join))
+    else:
+        c.execute("INSERT INTO readings (Timestamp, Temperature, Humidity) VALUES (%s, %s, %s)",(timestamp, temp, humidity))
     conn.commit()
     print "Sensor data recorded to mysql database: "+mysql_db+" at "+timestamp
     return
@@ -174,9 +191,6 @@ def diskFree(working_dir):
 def recordImage2(working_dir):
     """Records video from the rpi camera, encodes it to mp4 and copies it to a
     directory for that calendar date."""
-    getTimestamp()
-    print "Motion detected: "
-    print str(timestamp)
     if ENABLE_DHT:
         temp_c, hum_pct = tempHumidity()
     h264_save_file_tail = RAW_FILE_TAIL+timestamp+'.h264'
@@ -210,18 +224,20 @@ def recordImage2(working_dir):
         subprocess.call(['avconv', '-i', h264_save_file_join, '-r', str(FRAME_RATE), '-vcodec', 'copy', mp4_save_file_join])
         print "Video encoded to "+mp4_save_file_join
         time.sleep(2)
-        if mysql_enable: writesql(timestamp, temp, humidity)
         if os.path.isfile(mp4_save_file_join):
             print "Cleaning up..."
             os.remove(h264_save_file_join)
             print "Done cleaning up."
         else:
             print "Transcoding FAILED, "+h264_save_file_join+" must be re-encoded before it will play."
+        if mysql_enable: writesql(timestamp, temp, humidity, mp4_save_file_join)
+    return mp4_save_file_join
 
 #logging.basicConfig(filename=RAW_FILE_HEAD. loglevel=logging.DEBUG)
 working_dir = getattr(timedir.nowdir(output_dir, scopelevel), scopedir)
 free_pct = diskFree(working_dir)
-if sampFreq: schedule.every(sampFreq).seconds.do(run_threaded, sampleRecord)
+if sampFreq and not ENABLE_DHT: print "WARNING: Unable to set sample frequency as the DHT sensor is not enabled."
+if ENABLE_DHT and sampFreq: schedule.every(sampFreq).seconds.do(run_threaded, sampleRecord)
 print "PIR Camera Control Test (CTRL+C to exit)"
 time.sleep(5)
 print "Ready"
@@ -244,5 +260,6 @@ except KeyboardInterrupt:
 
 finally:
     GPIO.cleanup()
-    c.close
-    conn.close()
+    if mysql_enable:
+        c.close
+        conn.close()
