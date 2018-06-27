@@ -51,7 +51,7 @@ mysql_user = config["mysql_user"]
 mysql_pw = config["mysql_pw"]
 mysql_db = config["mysql_db"]
 conn = MySQLdb.connect(host= mysql_host, user= mysql_user, passwd=mysql_pw, db=mysql_db)
-c=conn.cursor()
+mysql_cursor=conn.cursor()
 
 # Deal with command-line arguments
 wlc_parser = argparse.ArgumentParser(description='Record video on a Raspberry Pi 2 triggered by PIR sensor. Also records temp/humidity from DHT11.')
@@ -98,7 +98,7 @@ ENABLE_DHT = wlc_args.ENABLE_DHT
 sampFreq = int(wlc_args.sampFreq)
 now = datetime.datetime.now()
 timestamp = now.strftime('%Y-%m-%d_%H-%M-%S')
-(humidity, temp) = Adafruit_DHT.read_retry(DHT_TYPE, DHT_PIN)
+if ENABLE_DHT: (humidity, temp) = Adafruit_DHT.read_retry(DHT_TYPE, DHT_PIN)
 
 if wlc_args.scope == "year": scopelevel = 0; scopedir = "yearDir"
 
@@ -155,14 +155,14 @@ def writesql(timestamp, temp, humidity, *mp4_save_file_join):
         print filename
         fn_insert = 'INSERT INTO readings (Timestamp, Temperature, Humidity, video_filename) VALUES (\'{0}\', \'{1}\', \'{2}\', \'{3}\')'
         fn_ondupe = ' ON DUPLICATE KEY UPDATE video_filename = \'{0}\';'.format(filename)
-        fn_query = fn_insert.format(timestamp, temp, humidity, filename)
+        fn_query = fn_insert.format(timestamp, temp, humidity, filename)+fn_ondupe
         print "SQL COMMAND: "+fn_query
 #        print "SQL COMMAND: "+fn_ondupe
-        c.execute(fn_query)
+        mysql_cursor.execute(fn_query)
 #        c.execute(fn_ondupe)
 #        c.execute("INSERT INTO readings (Timestamp, Temperature, Humidity, video_filename) VALUES (%s, %s, %s, %s)",(timestamp, temp, humidity, mp4_save_file_join))
     else:
-        c.execute("INSERT INTO readings (Timestamp, Temperature, Humidity) VALUES (%s, %s, %s)",(timestamp, temp, humidity))
+        if ENABLE_DHT:         mysql_cursor.execute("INSERT INTO readings (Timestamp, Temperature, Humidity) VALUES (%s, %s, %s)",(timestamp, temp, humidity))
     conn.commit()
     print "Sensor data recorded to mysql database: "+mysql_db+" at "+timestamp
     return
@@ -178,7 +178,7 @@ def sampleRecord():
     """Get a timestamp, data from sensor, and record it to a database or file."""
     ts = getTimestamp()
     (temp_samp, hum_samp) = tempHumidity()
-    writesql(timestamp, temp_samp, hum_samp)
+    writesql(ts, temp_samp, hum_samp)
     return
 
 def diskFree(working_dir):
@@ -261,5 +261,5 @@ except KeyboardInterrupt:
 finally:
     GPIO.cleanup()
     if mysql_enable:
-        c.close
+        mysql_cursor.close
         conn.close()
